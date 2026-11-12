@@ -4,25 +4,20 @@ Uso:
     python src/simulacion.py 2026            # 10.000 simulaciones
     python src/simulacion.py 2026 50000
 """
-import sqlite3
 import sys
 
 import numpy as np
 import pandas as pd
 
-from modelo import RUTA_DB, ModeloPoisson, cargar_partidos
+from db import leer
+from modelo import ModeloPoisson, cargar_partidos
 from nombres import canonico
 
 DESCENSOS = 2  # cuántos bajan a Primera B (ajústalo si cambia el reglamento)
 
 
 def partidos_pendientes(temporada: int) -> pd.DataFrame:
-    con = sqlite3.connect(RUTA_DB)
-    df = pd.read_sql(
-        "SELECT local, visita FROM partidos WHERE temporada = ? AND estado = 'NS'",
-        con, params=(temporada,),
-    )
-    con.close()
+    df = leer("SELECT local, visita FROM partidos WHERE temporada = :t AND estado = 'NS'", t=temporada)
     df["local"] = df["local"].map(canonico)
     df["visita"] = df["visita"].map(canonico)
     return df

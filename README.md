@@ -56,6 +56,13 @@ python src/modelo.py predecir "coquimbo" "colo"
 # Simulaciones
 python src/simulacion.py 2026
 python src/prediccion_2027.py --ascienden "Equipo 1" "Equipo 2"
+
+# Página HTML (sin servidor)
+python src/exportar.py
+open web/index.html
+
+# Página con Streamlit
+streamlit run src/app.py
 ```
 
 ## Estructura
@@ -85,7 +92,7 @@ liga-chilena/
 ## Próximos pasos
 
 - [ ] API con FastAPI
-- [ ] Página web con Streamlit
+- [x] Página web (HTML en `web/` y Streamlit en `src/app.py`)
 - [ ] Datos de Primera B
 - [ ] Copa Chile y Copa de la Liga
 

@@ -9,7 +9,7 @@ import time
 
 import requests
 
-from datos import conectar
+from db import guardar
 
 URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/chi.1/scoreboard"
 LIGA = 265  # mismo id que API-Football para que todo quede junto
@@ -59,7 +59,6 @@ def a_fila(evento: dict, temporada: int) -> tuple | None:
 
 
 def descargar(temporada: int) -> None:
-    con = conectar()
     filas = []
     for mes in range(1, 13):
         eventos = pedir_mes(temporada, mes)
@@ -67,9 +66,7 @@ def descargar(temporada: int) -> None:
         print(f"  {temporada}-{mes:02d}: {len(eventos)} partidos")
         time.sleep(0.5)  # no saturar a ESPN
 
-    con.executemany("INSERT OR REPLACE INTO partidos VALUES (?,?,?,?,?,?,?,?,?,?)", filas)
-    con.commit()
-    con.close()
+    guardar(filas)
     jugados = sum(1 for f in filas if f[5] == "FT")
     print(f"Temporada {temporada}: {len(filas)} partidos ({jugados} jugados)")
 

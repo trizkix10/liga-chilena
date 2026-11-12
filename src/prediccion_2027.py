@@ -76,12 +76,8 @@ def simular_2027(equipos: list[str], f: pd.DataFrame, base: float, local: float,
     }, index=equipos).sort_values(["campeon", "pts_esperados"], ascending=False)
 
 
-if __name__ == "__main__":
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--ascienden", nargs="*", default=[])
-    ap.add_argument("-n", type=int, default=10_000)
-    args = ap.parse_args()
-
+def proyectar_2027(ascienden: list[str] | None = None, n: int = 10_000):
+    """Devuelve (tabla, bajan, suben) con la proyección del torneo 2027."""
     # 1) Quién baja: los más probables según la simulación de 2026
     sim26 = simular(2026, 10_000)
     bajan = sim26.sort_values("desciende", ascending=False).index[:DESCENSOS].tolist()
@@ -92,21 +88,28 @@ if __name__ == "__main__":
     base, local, f = fuerzas(modelo)
     f = f * REGRESION
 
-    # 3) Ascendidos
-    suben = [canonico(e) for e in args.ascienden] or [f"Ascendido {i + 1}" for i in range(DESCENSOS)]
+    # 3) Ascendidos: valen como el promedio de los equipos más débiles
+    suben = [canonico(e) for e in (ascienden or [])] or [f"Ascendido {i + 1}" for i in range(DESCENSOS)]
     # ataque alto = bueno; defensa alta = recibe más goles = malo -> fuerza = ataque - defensa
     fuerza = f.loc[siguen, "ataque"] - f.loc[siguen, "defensa"]
-    debiles = fuerza.nsmallest(DEBILES_REF).index
-    ref = f.loc[debiles].mean()
+    ref = f.loc[fuerza.nsmallest(DEBILES_REF).index].mean()
     for e in suben:
-        f.loc[e] = ref  # si ya existe (ej. jugó Primera antes) igual usa la referencia de ascendido
+        f.loc[e] = ref
 
-    equipos = siguen + suben
+    res = simular_2027(siguen + suben, f, base, local, n)
+    return res, bajan, suben
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--ascienden", nargs="*", default=[])
+    ap.add_argument("-n", type=int, default=10_000)
+    args = ap.parse_args()
+
+    res, bajan, suben = proyectar_2027(args.ascienden, args.n)
     print(f"Bajan (estimado): {bajan}")
     print(f"Suben: {suben}\n")
-
-    res = simular_2027(equipos, f, base, local, args.n)
     for c in ["campeon", "top3", "desciende"]:
         res[c] = (res[c] * 100).map(lambda x: f"{x:5.1f}%")
-    print(f"Torneo 2027 — {len(equipos)} equipos — {args.n:,} simulaciones\n")
+    print(f"Torneo 2027 — {len(res)} equipos — {args.n:,} simulaciones\n")
     print(res.to_string())

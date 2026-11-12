@@ -7,30 +7,16 @@ Uso:
     python src/datos.py resumen                     # qué hay en la base
 """
 import os
-import sqlite3
 import sys
-from pathlib import Path
 
 import requests
 
-RAIZ = Path(__file__).resolve().parent.parent
-RUTA_DB = RAIZ / "data" / "liga.db"
+from db import cargar_env, descripcion, guardar, leer
+
 URL_BASE = "https://v3.football.api-sports.io"
 
 
-# ---------- Configuración ----------
-
-def cargar_env() -> None:
-    """Lee .env (CLAVE=valor) y lo pasa a variables de entorno."""
-    ruta = RAIZ / ".env"
-    if not ruta.exists():
-        return
-    for linea in ruta.read_text().splitlines():
-        linea = linea.strip()
-        if linea and not linea.startswith("#") and "=" in linea:
-            clave, valor = linea.split("=", 1)
-            os.environ.setdefault(clave.strip(), valor.strip())
-
+# ---------- API ----------
 
 def pedir(endpoint: str, **params) -> dict:
     """Hace un GET a la API y devuelve el JSON. Cada llamada gasta 1 de las 100 diarias."""
@@ -59,47 +45,20 @@ def pedir(endpoint: str, **params) -> dict:
 
 # ---------- Base de datos ----------
 
-def conectar() -> sqlite3.Connection:
-    RUTA_DB.parent.mkdir(exist_ok=True)
-    con = sqlite3.connect(RUTA_DB)
-    con.execute("""
-        CREATE TABLE IF NOT EXISTS partidos (
-            id         INTEGER PRIMARY KEY,   -- id del partido en la API
-            liga       INTEGER,
-            temporada  INTEGER,
-            fecha      TEXT,
-            ronda      TEXT,
-            estado     TEXT,                  -- FT = terminado, NS = no empezado
-            local      TEXT,
-            visita     TEXT,
-            gl         INTEGER,
-            gv         INTEGER
-        )
-    """)
-    return con
-
-
-def guardar_partidos(con: sqlite3.Connection, respuesta: list) -> int:
-    filas = []
-    for p in respuesta:
-        filas.append((
-            p["fixture"]["id"],
-            p["league"]["id"],
-            p["league"]["season"],
-            p["fixture"]["date"],
-            p["league"]["round"],
-            p["fixture"]["status"]["short"],
-            p["teams"]["home"]["name"],
-            p["teams"]["away"]["name"],
-            p["goals"]["home"],
-            p["goals"]["away"],
-        ))
-    # INSERT OR REPLACE: si el partido ya existe, lo actualiza (ej. se jugó)
-    con.executemany(
-        "INSERT OR REPLACE INTO partidos VALUES (?,?,?,?,?,?,?,?,?,?)", filas
-    )
-    con.commit()
-    return len(filas)
+def a_filas(respuesta: list) -> list[tuple]:
+    """Saca del JSON de la API solo las columnas de la tabla partidos."""
+    return [(
+        p["fixture"]["id"],
+        p["league"]["id"],
+        p["league"]["season"],
+        p["fixture"]["date"],
+        p["league"]["round"],
+        p["fixture"]["status"]["short"],
+        p["teams"]["home"]["name"],
+        p["teams"]["away"]["name"],
+        p["goals"]["home"],
+        p["goals"]["away"],
+    ) for p in respuesta]
 
 
 # ---------- Comandos ----------
@@ -121,28 +80,25 @@ def cmd_ligas() -> None:
 
 
 def cmd_descargar(liga: int, temporadas: list[int]) -> None:
-    con = conectar()
     for temporada in temporadas:
         print(f"Descargando liga {liga}, temporada {temporada}...")
         d = pedir("fixtures", league=liga, season=temporada)
-        n = guardar_partidos(con, d.get("response", []))
+        n = guardar(a_filas(d.get("response", [])))
         print(f"  {n} partidos guardados")
-    con.close()
 
 
 def cmd_resumen() -> None:
-    con = conectar()
-    filas = con.execute("""
+    df = leer("""
         SELECT temporada,
-               COUNT(*)                                   AS total,
-               SUM(estado IN ('FT','AET','PEN'))           AS jugados
+               COUNT(*) AS total,
+               SUM(CASE WHEN estado IN ('FT','AET','PEN') THEN 1 ELSE 0 END) AS jugados
         FROM partidos GROUP BY temporada ORDER BY temporada
-    """).fetchall()
-    if not filas:
-        print("La base está vacía. Usa: python src/datos.py descargar 265 2025")
-    for temporada, total, jugados in filas:
-        print(f"{temporada}: {total} partidos ({jugados} jugados)")
-    con.close()
+    """)
+    print(f"Base de datos: {descripcion()}")
+    if df.empty:
+        print("La base está vacía. Usa: python src/datos.py descargar 265 2024")
+    for f in df.itertuples():
+        print(f"{f.temporada}: {f.total} partidos ({f.jugados} jugados)")
 
 
 if __name__ == "__main__":

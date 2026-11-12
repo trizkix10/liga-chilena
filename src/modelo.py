@@ -9,9 +9,7 @@ Uso:
     python src/modelo.py predecir "Colo Colo" "Coquimbo"
     python src/modelo.py evaluar            # entrena 2022-2023, prueba en 2024
 """
-import sqlite3
 import sys
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -19,9 +17,9 @@ import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from scipy.stats import poisson
 
+from db import leer
 from nombres import canonico, clave
 
-RUTA_DB = Path(__file__).resolve().parent.parent / "data" / "liga.db"
 MAX_GOLES = 10          # marcadores 0..10 para cada equipo
 VIDA_MEDIA_DIAS = 365   # un partido de hace 1 año pesa la mitad que uno de hoy
 
@@ -29,12 +27,7 @@ VIDA_MEDIA_DIAS = 365   # un partido de hace 1 año pesa la mitad que uno de hoy
 # ---------- Datos ----------
 
 def cargar_partidos() -> pd.DataFrame:
-    con = sqlite3.connect(RUTA_DB)
-    df = pd.read_sql(
-        "SELECT * FROM partidos WHERE estado IN ('FT','AET','PEN') AND gl IS NOT NULL",
-        con,
-    )
-    con.close()
+    df = leer("SELECT * FROM partidos WHERE estado IN ('FT','AET','PEN') AND gl IS NOT NULL")
     # Unificar nombres entre fuentes (API-Football / ESPN)
     df["local"] = df["local"].map(canonico)
     df["visita"] = df["visita"].map(canonico)

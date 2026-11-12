@@ -4,11 +4,8 @@ Uso:
     python src/nombres.py      # lista los nombres en la base y cómo quedan unificados
 """
 import re
-import sqlite3
 import unicodedata
-from pathlib import Path
 
-RUTA_DB = Path(__file__).resolve().parent.parent / "data" / "liga.db"
 
 # clave normalizada -> nombre bonito. Agrega aquí si `python src/nombres.py` muestra duplicados.
 NOMBRES = {
@@ -60,9 +57,8 @@ def canonico(nombre: str) -> str:
 
 
 if __name__ == "__main__":
-    con = sqlite3.connect(RUTA_DB)
-    nombres = sorted({n for (n,) in con.execute("SELECT local FROM partidos UNION SELECT visita FROM partidos")})
-    con.close()
+    from db import leer
+    nombres = sorted(leer("SELECT local AS n FROM partidos UNION SELECT visita FROM partidos")["n"])
     grupos: dict[str, list[str]] = {}
     for n in nombres:
         grupos.setdefault(canonico(n), []).append(n)
