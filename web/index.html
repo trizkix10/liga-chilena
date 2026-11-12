@@ -28,7 +28,6 @@
   }
   .contenedor { max-width: 980px; margin: 0 auto; padding: 0 20px; }
 
-  /* Encabezado */
   header { padding: 44px 0 20px; }
   .marca { display: flex; align-items: center; gap: 14px; }
   .escudo {
@@ -39,7 +38,6 @@
   h1 { margin: 0; font-size: 30px; letter-spacing: -0.02em; }
   .bajada { margin: 6px 0 0; color: var(--suave); font-size: 15px; }
 
-  /* Pestañas */
   nav {
     position: sticky; top: 0; z-index: 5;
     background: rgba(10, 16, 32, 0.92); backdrop-filter: blur(8px);
@@ -63,7 +61,6 @@
     border-radius: 14px; padding: 20px;
   }
 
-  /* Partido */
   .selectores { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: end; }
   .selectores label { display: block; font-size: 12px; color: var(--suave); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
   select {
@@ -102,7 +99,6 @@
   .pista i { display: block; height: 100%; border-radius: 5px; background: var(--ambar); }
   .marcadores small { color: var(--suave); text-align: right; font-size: 13px; }
 
-  /* Partidos pendientes */
   .dia { font-size: 13px; color: var(--suave); text-transform: capitalize; margin: 22px 0 8px; }
   .dia:first-child { margin-top: 0; }
   .tarjetas { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
@@ -113,7 +109,6 @@
   .tarjeta .barra { height: 8px; margin: 12px 0 6px; border-radius: 4px; }
   .tarjeta .leyenda { font-size: 12px; font-variant-numeric: tabular-nums; }
 
-  /* Tablas */
   .tabla-scroll { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; min-width: 640px; }
   th { text-align: left; color: var(--suave); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 0 10px 10px; white-space: nowrap; }
@@ -224,7 +219,6 @@
   const D = DATOS;
   const equipos = Object.keys(D.fuerzas).sort((a, b) => a.localeCompare(b, "es"));
 
-  // ---------- Modelo Poisson ----------
   function poisson(k, lam) {
     let p = Math.exp(-lam);
     for (let i = 1; i <= k; i++) p *= lam / i;
@@ -257,7 +251,6 @@
       '<div class="b-visita" style="flex-basis:' + r.pV * 100 + '%">' + t(r.pV) + "</div></div>";
   }
 
-  // ---------- Pestaña: partido ----------
   const selL = $("sel-local"), selV = $("sel-visita");
   for (const e of equipos) { selL.add(new Option(e, e)); selV.add(new Option(e, e)); }
   if (D.pendientes.length) { selL.value = D.pendientes[0].local; selV.value = D.pendientes[0].visita; }
@@ -306,7 +299,6 @@
   selV.addEventListener("change", pintarPartido);
   pintarPartido();
 
-  // ---------- Pestaña: próximos partidos ----------
   (function () {
     const n = D.pendientes.length;
     $("nota-pendientes").textContent = n
@@ -331,7 +323,6 @@
     $("lista-pendientes").innerHTML = html;
   })();
 
-  // ---------- Tablas con barras ----------
   function celdaProb(p, color) {
     const txt = p === 0 ? "—" : p < 0.001 ? "<0.1%" : p > 0.999 && p < 1 ? ">99.9%" : pct(p, 1);
     return '<td><div class="prob"><div class="pista"><i style="width:' + p * 100 + "%;background:" + color + '"></i></div><span' + (p === 0 ? ' class="cero"' : "") + ">" + txt + "</span></div></td>";
@@ -360,7 +351,6 @@
       "</tbody>";
   })();
 
-  // ---------- Textos y pestañas ----------
   $("bajada").textContent = "Modelo Poisson entrenado con " + D.partidos_usados.toLocaleString("es-CL") + " partidos de Primera División (" + D.temporadas[0] + "–" + D.temporadas[D.temporadas.length - 1] + ").";
   $("pie").textContent = "Datos: API-Football y ESPN. Actualizado el " + D.generado.split("-").reverse().join("-") + ". Las predicciones son estimaciones estadísticas, no certezas.";
 

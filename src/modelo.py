@@ -20,15 +20,12 @@ from scipy.stats import poisson
 from db import leer
 from nombres import canonico, clave
 
-MAX_GOLES = 10          # marcadores 0..10 para cada equipo
-VIDA_MEDIA_DIAS = 365   # un partido de hace 1 año pesa la mitad que uno de hoy
+MAX_GOLES = 10
+VIDA_MEDIA_DIAS = 365
 
-
-# ---------- Datos ----------
 
 def cargar_partidos() -> pd.DataFrame:
     df = leer("SELECT * FROM partidos WHERE estado IN ('FT','AET','PEN') AND gl IS NOT NULL")
-    # Unificar nombres entre fuentes (API-Football / ESPN)
     df["local"] = df["local"].map(canonico)
     df["visita"] = df["visita"].map(canonico)
     df["fecha"] = pd.to_datetime(df["fecha"], utc=True, format="mixed")
@@ -44,12 +41,9 @@ def a_formato_largo(df: pd.DataFrame) -> pd.DataFrame:
     return pd.concat([local, visita], ignore_index=True)
 
 
-# ---------- Modelo ----------
-
 class ModeloPoisson:
     def entrenar(self, df: pd.DataFrame) -> "ModeloPoisson":
         largo = a_formato_largo(df)
-        # Peso por antigüedad: partidos recientes importan más
         dias = (largo["fecha"].max() - largo["fecha"]).dt.days
         pesos = 0.5 ** (dias / VIDA_MEDIA_DIAS)
 
@@ -74,7 +68,6 @@ class ModeloPoisson:
     def predecir(self, local: str, visita: str) -> dict:
         lam_l, lam_v = self.goles_esperados(local, visita)
         goles = np.arange(MAX_GOLES + 1)
-        # Matriz: fila = goles local, columna = goles visita
         matriz = np.outer(poisson.pmf(goles, lam_l), poisson.pmf(goles, lam_v))
 
         i, j = np.unravel_index(matriz.argmax(), matriz.shape)
@@ -88,8 +81,6 @@ class ModeloPoisson:
             "marcador_probable": f"{i}-{j}",
         }
 
-
-# ---------- Utilidades ----------
 
 def buscar_equipo(nombre: str, equipos: list[str]) -> str:
     """Permite escribir 'coquimbo' en vez de 'Coquimbo Unido'."""
@@ -124,7 +115,6 @@ def evaluar() -> None:
         reales.append(resultado_real(p["gl"], p["gv"]))
     probs, reales = np.array(probs), np.array(reales)
 
-    # Línea base: frecuencias históricas de L/E/V en el entrenamiento
     base = np.bincount([resultado_real(a, b) for a, b in zip(train["gl"], train["gv"])], minlength=3)
     base = base / base.sum()
 

@@ -13,7 +13,7 @@ from db import leer
 from modelo import ModeloPoisson, cargar_partidos
 from nombres import canonico
 
-DESCENSOS = 2  # cuántos bajan a Primera B (ajústalo si cambia el reglamento)
+DESCENSOS = 2
 
 
 def partidos_pendientes(temporada: int) -> pd.DataFrame:
@@ -44,13 +44,11 @@ def simular(temporada: int, n: int = 10_000, semilla: int = 0) -> pd.DataFrame:
     base = base.reindex(equipos, fill_value=0)
     idx = {e: i for i, e in enumerate(equipos)}
 
-    # Goles esperados de cada partido pendiente (se calculan una sola vez)
     lam = np.array([modelo.goles_esperados(l, v) for l, v in zip(pendientes.local, pendientes.visita)])
     il = pendientes.local.map(idx).to_numpy()
     iv = pendientes.visita.map(idx).to_numpy()
 
     rng = np.random.default_rng(semilla)
-    # n simulaciones a la vez: matrices (n, partidos)
     gl = rng.poisson(lam[:, 0], size=(n, len(pendientes)))
     gv = rng.poisson(lam[:, 1], size=(n, len(pendientes)))
 
@@ -65,9 +63,8 @@ def simular(temporada: int, n: int = 10_000, semilla: int = 0) -> pd.DataFrame:
         gf[:, il[k]] += gl[:, k]
         gf[:, iv[k]] += gv[:, k]
 
-    # Orden: puntos, diferencia, goles a favor (+ ruido mínimo para desempatar al azar)
     puntaje = pts * 1e6 + dif * 1e3 + gf + rng.random(pts.shape) * 1e-3
-    posiciones = (-puntaje).argsort(axis=1).argsort(axis=1) + 1  # 1 = primero
+    posiciones = (-puntaje).argsort(axis=1).argsort(axis=1) + 1
 
     t = len(equipos)
     res = pd.DataFrame({

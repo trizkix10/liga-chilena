@@ -7,7 +7,6 @@ import re
 import unicodedata
 
 
-# clave normalizada -> nombre bonito. Agrega aquí si `python src/nombres.py` muestra duplicados.
 NOMBRES = {
     "colo colo": "Colo-Colo",
     "universidad de chile": "U. de Chile",
@@ -28,7 +27,6 @@ NOMBRES = {
     "curico unido": "Curicó Unido",
 }
 
-# Variantes que se reemplazan antes de buscar en NOMBRES
 ALIAS = {
     "everton de vina": "everton",
     "everton de vina del mar": "everton",

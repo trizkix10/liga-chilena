@@ -25,7 +25,7 @@ Predice partidos de la Primera División de Chile, simula el campeonato en curso
 ## Instalación
 
 ```bash
-git clone https://github.com/TU_USUARIO/liga-chilena.git
+git clone https://github.com/trizkix10/liga-chilena.git
 cd liga-chilena
 python3 -m venv venv
 source venv/bin/activate

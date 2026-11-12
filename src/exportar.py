@@ -30,7 +30,6 @@ def pendientes_con_fecha(temporada: int) -> pd.DataFrame:
     )
     df["local"] = df["local"].map(canonico)
     df["visita"] = df["visita"].map(canonico)
-    # Hora de Chile para mostrar el día correcto
     df["fecha"] = (pd.to_datetime(df["fecha"], utc=True, format="mixed")
                    .dt.tz_convert("America/Santiago").dt.strftime("%Y-%m-%d"))
     return df
@@ -48,7 +47,6 @@ if __name__ == "__main__":
     actuales = partidos[partidos["temporada"] == TEMPORADA]
     equipos = sorted(set(actuales["local"]) | set(actuales["visita"]))
 
-    # Tabla de hoy + probabilidades del campeonato
     tabla = tabla_actual(actuales)
     sim = simular(TEMPORADA)
     sim["dif"] = tabla["dif"].reindex(sim.index).fillna(0).astype(int)

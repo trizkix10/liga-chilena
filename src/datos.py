@@ -16,8 +16,6 @@ from db import cargar_env, descripcion, guardar, leer
 URL_BASE = "https://v3.football.api-sports.io"
 
 
-# ---------- API ----------
-
 def pedir(endpoint: str, **params) -> dict:
     """Hace un GET a la API y devuelve el JSON. Cada llamada gasta 1 de las 100 diarias."""
     key = os.environ.get("API_FOOTBALL_KEY")
@@ -37,13 +35,10 @@ def pedir(endpoint: str, **params) -> dict:
     if restantes is not None:
         print(f"  (peticiones restantes hoy: {restantes})")
 
-    # La API responde 200 aunque haya error; los errores vienen en "errors"
     if datos.get("errors"):
         print(f"  ⚠️  Error de la API: {datos['errors']}")
     return datos
 
-
-# ---------- Base de datos ----------
 
 def a_filas(respuesta: list) -> list[tuple]:
     """Saca del JSON de la API solo las columnas de la tabla partidos."""
@@ -60,8 +55,6 @@ def a_filas(respuesta: list) -> list[tuple]:
         p["goals"]["away"],
     ) for p in respuesta]
 
-
-# ---------- Comandos ----------
 
 def cmd_estado() -> None:
     d = pedir("status")

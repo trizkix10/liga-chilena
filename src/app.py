@@ -17,8 +17,6 @@ TEMPORADA = 2026
 st.set_page_config(page_title="Predictor Liga Chilena", page_icon="⚽", layout="centered")
 
 
-# ---------- Cálculos (se guardan en caché para no repetirlos) ----------
-
 @st.cache_resource
 def obtener_modelo() -> ModeloPoisson:
     return ModeloPoisson().entrenar(cargar_partidos())
@@ -58,8 +56,6 @@ def tabla_probabilidades(df: pd.DataFrame, columnas: dict[str, str]) -> None:
     st.dataframe(vista, column_config=config, width="stretch", height=38 * (len(vista) + 1))
 
 
-# ---------- Página ----------
-
 st.title("⚽ Predictor Liga Chilena")
 st.caption("Modelo Poisson entrenado con los partidos de Primera División desde 2022.")
 
@@ -70,7 +66,6 @@ tab_partido, tab_fecha, tab_torneo, tab_2027 = st.tabs(
     ["Partido", "Partidos pendientes", f"Campeonato {TEMPORADA}", "Torneo 2027"]
 )
 
-# ----- Pestaña 1: un partido -----
 with tab_partido:
     col_l, col_v = st.columns(2)
     local = col_l.selectbox("Local", equipos, index=0)
@@ -111,7 +106,6 @@ with tab_partido:
             },
         )
 
-# ----- Pestaña 2: partidos que faltan -----
 with tab_fecha:
     pendientes = obtener_pendientes(TEMPORADA)
     if pendientes.empty:
@@ -134,7 +128,6 @@ with tab_fecha:
             {"p_local": "Gana local", "p_empate": "Empate", "p_visita": "Gana visita"},
         )
 
-# ----- Pestaña 3: campeonato en curso -----
 with tab_torneo:
     sim = obtener_simulacion(TEMPORADA)
     st.write(
@@ -144,7 +137,6 @@ with tab_torneo:
     tabla = sim.rename(columns={"pts_actuales": "Pts hoy", "pts_esperados": "Pts finales (esperados)"})
     tabla_probabilidades(tabla, {"campeon": "Campeón", "top3": "Top 3", "desciende": "Desciende"})
 
-# ----- Pestaña 4: torneo siguiente -----
 with tab_2027:
     st.write(
         "Proyección del torneo completo, todos contra todos. Es mucho más incierta que la de "

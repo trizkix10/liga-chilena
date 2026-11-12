@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     origen = create_engine(f"sqlite:///{RUTA_SQLITE}")
     df = pd.read_sql("SELECT * FROM partidos", origen)[COLUMNAS]
-    df = df.astype(object).where(df.notna(), None)   # NaN -> NULL
+    df = df.astype(object).where(df.notna(), None)
     n = guardar(list(df.itertuples(index=False, name=None)))
 
     total = int(leer("SELECT COUNT(*) AS n FROM partidos")["n"][0])

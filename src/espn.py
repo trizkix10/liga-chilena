@@ -12,8 +12,8 @@ import requests
 from db import guardar
 
 URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/chi.1/scoreboard"
-LIGA = 265  # mismo id que API-Football para que todo quede junto
-SESION = requests.Session()  # reutiliza la conexión: más rápido
+LIGA = 265
+SESION = requests.Session()
 
 
 def pedir(fechas: str) -> list:
@@ -45,11 +45,11 @@ def a_fila(evento: dict, temporada: int) -> tuple | None:
     gl = int(equipos["home"]["score"]) if terminado else None
     gv = int(equipos["away"]["score"]) if terminado else None
     return (
-        -int(evento["id"]),          # id negativo: no choca con los de API-Football
+        -int(evento["id"]),
         LIGA,
         temporada,
         evento["date"],
-        None,                        # ESPN no trae la ronda en este endpoint
+        None,
         "FT" if terminado else "NS",
         equipos["home"]["team"]["displayName"],
         equipos["away"]["team"]["displayName"],
@@ -64,7 +64,7 @@ def descargar(temporada: int) -> None:
         eventos = pedir_mes(temporada, mes)
         filas += [f for e in eventos if (f := a_fila(e, temporada))]
         print(f"  {temporada}-{mes:02d}: {len(eventos)} partidos")
-        time.sleep(0.5)  # no saturar a ESPN
+        time.sleep(0.5)
 
     guardar(filas)
     jugados = sum(1 for f in filas if f[5] == "FT")

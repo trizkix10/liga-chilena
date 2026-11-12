@@ -21,8 +21,8 @@ from modelo import ModeloPoisson, cargar_partidos
 from nombres import canonico
 from simulacion import DESCENSOS, simular
 
-REGRESION = 0.7       # 1 = las fuerzas de 2026 se mantienen igual; 0 = todos iguales
-DEBILES_REF = 4       # un ascendido vale como el promedio de los 4 más débiles
+REGRESION = 0.7
+DEBILES_REF = 4
 
 
 def fuerzas(modelo: ModeloPoisson) -> tuple[float, float, pd.DataFrame]:
@@ -32,7 +32,6 @@ def fuerzas(modelo: ModeloPoisson) -> tuple[float, float, pd.DataFrame]:
     att = {e: p.get(f"C(equipo)[T.{e}]", 0.0) for e in modelo.equipos}
     dfn = {e: p.get(f"C(rival)[T.{e}]", 0.0) for e in modelo.equipos}
     f = pd.DataFrame({"ataque": att, "defensa": dfn})
-    # Centrar: el promedio de la liga queda en la base
     base += f["ataque"].mean() + f["defensa"].mean()
     f -= f.mean()
     return base, local, f
@@ -41,7 +40,7 @@ def fuerzas(modelo: ModeloPoisson) -> tuple[float, float, pd.DataFrame]:
 def simular_2027(equipos: list[str], f: pd.DataFrame, base: float, local: float,
                  n: int = 10_000, semilla: int = 0) -> pd.DataFrame:
     idx = {e: i for i, e in enumerate(equipos)}
-    fixture = list(itertools.permutations(equipos, 2))   # ida y vuelta
+    fixture = list(itertools.permutations(equipos, 2))
     il = np.array([idx[a] for a, _ in fixture])
     iv = np.array([idx[b] for _, b in fixture])
 
@@ -78,19 +77,15 @@ def simular_2027(equipos: list[str], f: pd.DataFrame, base: float, local: float,
 
 def proyectar_2027(ascienden: list[str] | None = None, n: int = 10_000):
     """Devuelve (tabla, bajan, suben) con la proyección del torneo 2027."""
-    # 1) Quién baja: los más probables según la simulación de 2026
     sim26 = simular(2026, 10_000)
     bajan = sim26.sort_values("desciende", ascending=False).index[:DESCENSOS].tolist()
     siguen = [e for e in sim26.index if e not in bajan]
 
-    # 2) Fuerzas con todos los datos, acercadas al promedio
     modelo = ModeloPoisson().entrenar(cargar_partidos())
     base, local, f = fuerzas(modelo)
     f = f * REGRESION
 
-    # 3) Ascendidos: valen como el promedio de los equipos más débiles
     suben = [canonico(e) for e in (ascienden or [])] or [f"Ascendido {i + 1}" for i in range(DESCENSOS)]
-    # ataque alto = bueno; defensa alta = recibe más goles = malo -> fuerza = ataque - defensa
     fuerza = f.loc[siguen, "ataque"] - f.loc[siguen, "defensa"]
     ref = f.loc[fuerza.nsmallest(DEBILES_REF).index].mean()
     for e in suben:
